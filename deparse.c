@@ -2268,7 +2268,7 @@ sqlite_deparse_column_ref(StringInfo buf, int varno, int varattno, PlannerInfo *
 				case FLOAT4OID:
 				case NUMERICOID:
 				{
-					if (colaff != SQLITE_REAL)
+					if (colaff != SQLITE_FLOAT)
 					{
 						elog(DEBUG2, "floatN unification for \"%s\"", colname);
 						appendStringInfoString(buf, "sqlite_fdw_float(");
