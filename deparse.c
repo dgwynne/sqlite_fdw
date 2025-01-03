@@ -2207,6 +2207,8 @@ sqlite_deparse_column_ref(StringInfo buf, int varno, int varattno, PlannerInfo *
 	else
 	{
 		char	   *colname = NULL;
+		char	   *coltype = NULL;
+		int			colaff = SQLITE_NULL;
 		List	   *options;
 		ListCell   *lc;
 		Oid			pg_atttyp = 0;
@@ -2228,10 +2230,16 @@ sqlite_deparse_column_ref(StringInfo buf, int varno, int varattno, PlannerInfo *
 			if (strcmp(def->defname, "column_name") == 0)
 			{
 				colname = defGetString(def);
-				elog(DEBUG3, "opt = %s\n", def->defname);
+				elog(DEBUG1, "column name = %s\n", colname);
 				break;
 			}
-			elog(DEBUG1, "column name = %s\n", colname);
+			if (strcmp(def->defname, "column_type") == 0)
+			{
+				coltype = defGetString(def);
+				elog(DEBUG4, "column type = %s", coltype);
+				colaff = sqlite_affinity_code(coltype);
+				break;
+			}
 		}
 
 		/*
@@ -2260,13 +2268,21 @@ sqlite_deparse_column_ref(StringInfo buf, int varno, int varattno, PlannerInfo *
 				case FLOAT4OID:
 				case NUMERICOID:
 				{
-					elog(DEBUG2, "floatN unification for \"%s\"", colname);
-					appendStringInfoString(buf, "sqlite_fdw_float(");
-					if (qualify_col)
-						ADD_REL_QUALIFIER(buf, varno);
-					appendStringInfoString(buf, sqlite_quote_identifier(colname, '`'));
-					appendStringInfoString(buf, ")");
-					break;
+					if (colaff != SQLITE_REAL)
+					{
+						elog(DEBUG2, "floatN unification for \"%s\"", colname);
+						appendStringInfoString(buf, "sqlite_fdw_float(");
+						if (qualify_col)
+							ADD_REL_QUALIFIER(buf, varno);
+						appendStringInfoString(buf, sqlite_quote_identifier(colname, '`'));
+						appendStringInfoString(buf, ")");
+					}
+					else
+					{
+						elog(DEBUG2, "floatN real affinity only for \"%s\"", colname);
+						appendStringInfoString(buf, sqlite_quote_identifier(colname, '`'));
+					}
+					break;					
 				}
 				case BOOLOID:
 				{
