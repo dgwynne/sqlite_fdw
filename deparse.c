@@ -2280,6 +2280,8 @@ sqlite_deparse_column_ref(StringInfo buf, int varno, int varattno, PlannerInfo *
 					else
 					{
 						elog(DEBUG2, "floatN real affinity only for \"%s\"", colname);
+						if (qualify_col)
+							ADD_REL_QUALIFIER(buf, varno);
 						appendStringInfoString(buf, sqlite_quote_identifier(colname, '`'));
 					}
 					break;
